@@ -105,6 +105,13 @@
   updated the vertex, edge, and face <code>halfedge()</code> pointers so every element still has a
   valid entry point. Boundary edges are left untouched.
 </p>
+<p>
+  <em>Debug journey:</em> my first pass forgot to update the two reused half-edge twins, so the
+  mesh looked fine once but crashed on a second flip. Drawing the before/after triangle diagram and
+  using <code>check_for</code> to see who pointed to each half-edge helped me find the dangling
+  pointer; after setting all six half-edge neighbor pointers and the vertex/edge/face half-edge
+  pointers explicitly, flips became safe to apply repeatedly.
+</p>
 
 <div class="row">
   <figure><img src="./images/part4_before.png" alt="teapot with selected edge"><figcaption>teapot with an edge selected for flipping</figcaption></figure>
@@ -121,6 +128,14 @@
   resulting triangles. I also marked the new vertex as <code>isNew</code> and flagged the two
   diagonal edges as new (while the two halves of the original edge stay <code>isNew = false</code>),
   which is exactly what Loop subdivision needs to distinguish the edges it should flip.
+</p>
+<p>
+  <em>Debug journey:</em> the hard part of splitting was keeping the six reused half-edges on the
+  correct undirected edges. At first I connected the new midpoint to the wrong opposite vertex, which
+  produced an element-count mismatch when I checked <code>nVertices/nEdges/nFaces</code>. I drew the
+  four resulting triangles, used the provided <code>CHECK_CLOSED</code> / <code>CHECK_FACE</code> /
+  <code>CHECK_VERTEX</code> assertions, and verified that one split adds exactly 1 vertex, 3 edges,
+  and 2 faces.
 </p>
 
 <div class="row">
@@ -143,6 +158,14 @@
   I follow the recommended three-step order: compute all new positions on the original coarse mesh;
   split every original edge and then flip the new diagonal edges that connect an old vertex to a new
   vertex; finally copy the computed positions into the vertices.
+</p>
+<p>
+  <em>Debugging tricks:</em> a naive loop that split edges while iterating began splitting the edges
+  it had just created, so I first snapshotted the original edges into a vector. I also marked the
+  collinear halves of each split edge as <code>isNew = false</code> and the two diagonal edges as
+  <code>isNew = true</code>; the flip step then touches only the diagonals, exactly the "blue edges"
+  of the 4-1 subdivision diagram. Element counts (a tetrahedron going from 4/6/4 to 10/24/16
+  vertices/edges/faces) gave me a quick invariant to check after each upsample.
 </p>
 
 <div class="row">
